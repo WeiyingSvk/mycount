@@ -1,0 +1,33 @@
+Package: mycount
+Type: Package
+Title: Group Count and Incidence Rate Calculation
+Version: 0.1.0
+Authors@R: 
+    person("Vicky", "S.", email = "weiyings@umich.edu", role = c("aut", "cre"))
+Description: 
+    The 'mycount' package provides an easy-to-use function 'count_bio()' 
+    for summarizing grouped data, extending the concept of 'dplyr::count()' 
+    with additional features tailored to biostatistics and epidemiological analysis.
+    It allows users to not only count observations or weighted events, 
+    but also compute incidence rates (events per person-time) 
+    and exact Poisson (Garwood) confidence intervals — commonly used 
+    in cohort and clinical trial studies.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: false
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Imports:
+    dplyr (>= 1.0.0),
+    rlang,
+    stats,
+    magrittr,
+    data.table
+Depends: 
+    R (>= 3.6)
+Suggests: 
+    knitr,
+    rmarkdown,
+    bench
+VignetteBuilder: knitr
+

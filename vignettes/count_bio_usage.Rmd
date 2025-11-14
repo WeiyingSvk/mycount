@@ -1,0 +1,29 @@
+
+
+---
+title: "Using count_bio() for Biostatistical Analysis"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Using count_bio() for Biostatistical Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7, fig.height = 4.5
+)
+library(mycount)
+library(dplyr)
+library(bench)
+set.seed(2025)
+```
+**1. Introduction**
+
+mycount::count_bio() extends dplyr::count() for biostatistics / epidemiology:
+it computes grouped counts, and—if provided—incidence rates (events per person-time)
+with exact Poisson (Garwood) 95% confidence intervals.
+
+We demonstrate usage, verify correctness against dplyr::count(), and compare efficiency with bench::mark() on simulated datasets.
