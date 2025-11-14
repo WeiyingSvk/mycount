@@ -1,0 +1,86 @@
+
+# mycount <img src="https://img.shields.io/badge/status-student_project-blue" align="right"/>
+
+[![test-coverage.yaml](https://github.com/WeiyingSvk/mycount/actions/workflows/test-coverage.yaml/badge.svg)](https://github.com/WeiyingSvk/mycount/actions/workflows/test-coverage.yaml)
+
+`mycount` extends the idea of `dplyr::count()` for **biostatistics**.  
+It not only produces grouped counts but can also compute **incidence
+rates** (events per person-time) with **exact Poisson (Garwood) 95%
+CIs** — common in cohort and clinical-trial reporting.
+
+**Installation**
+
+``` r
+# local development
+devtools::load_all(".")
+
+# or install after building
+devtools::install()
+
+# if hosted on GitHub (example):
+# remotes::install_github("WeiyingSvk/mycount")
+```
+
+**quick example**
+
+``` r
+library(mycount)
+library(dplyr)
+
+set.seed(1)
+df <- tibble(
+  arm = factor(sample(c("Drug", "Placebo"), 200, TRUE)),
+  py  = rexp(200, rate = 1/1.5),   # person-years
+  ae  = rbinom(200, 1, 0.25)       # event indicator (0/1)
+)
+```
+
+**Simple group count**
+
+``` r
+count_bio(df, arm)
+```
+
+\#\> \# A tibble: 2 × 2 \#\> arm n \#\> <fct> <int> \#\> 1 Drug 98 \#\>
+2 Placebo 102
+
+# Incidence rate per 100 person-years with exact Poisson CI
+
+``` r
+count_bio(df, arm, events = ae, person_time = py, per = 100)
+```
+
+\#\> \# A tibble: 2 × 6 \#\> arm n pt rate rate_lcl rate_ucl \#\> <fct>
+<int> <dbl> <dbl> <dbl> <dbl> \#\> 1 Drug 24 135. 17.8 11.4 26.4 \#\> 2
+Placebo 28 162. 17.3 11.5 24.9
+
+**Function overview** \###
+`count_bio(x, ..., events = NULL, person_time = NULL, per = 1, sort = FALSE, name = NULL, conf_level = 0.95)`
+
+**C++ (Rcpp) helper function** This package also includes a small C++
+function implemented via **Rcpp**:
+
+``` r
+sum_na_rm_cpp
+```
+
+It provides a fast, NA-removing sum for numeric vectors.
+
+**input** - **x**: A data frame or tibble.  
+- **…**: One or more grouping variables.  
+- **events**: (Optional) A binary or numeric variable indicating event
+counts.  
+- **person_time**: (Optional) A numeric variable representing
+person-time (e.g., person-years).  
+- **per**: Scaling factor for rate (default = 1). For instance,
+`per = 100` computes rates per 100 person-years.  
+- **sort**: Logical; if TRUE, sorts results by descending count or
+rate.  
+- **name**: Name of the count column (default `"n"`).  
+- **conf_level**: Confidence level for Poisson CI (default = 0.95).
+
+**output** \| Column \| Description \| \|:——-\|:————-\| \| `n` \| Number
+of observations or events in each group \| \| `pt` \| Total person-time
+for each group \| \| `rate` \| Event rate = `n / pt * per` \| \|
+`rate_lcl`, `rate_ucl` \| Exact Poisson 95% confidence interval for the
+rate \|
