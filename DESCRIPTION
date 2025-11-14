@@ -30,4 +30,5 @@ Suggests:
     rmarkdown,
     bench
 VignetteBuilder: knitr
-
+URL: https://github.com/WeiyingSvk/mycount
+BugReports: https://github.com/WeiyingSvk/mycount/issues
