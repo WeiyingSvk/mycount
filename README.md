@@ -2,7 +2,6 @@
 # mycount <img src="https://img.shields.io/badge/status-student_project-blue" align="right"/>
 
 [![R-CMD-check.yaml](https://github.com/WeiyingSvk/mycount/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/WeiyingSvk/mycount/actions/workflows/R-CMD-check.yaml)
-[![test-coverage.yaml](https://github.com/WeiyingSvk/mycount/actions/workflows/test-coverage.yaml/badge.svg)](https://github.com/WeiyingSvk/mycount/actions/workflows/test-coverage.yaml)
 
 `mycount` extends the idea of `dplyr::count()` for **biostatistics**.  
 It not only produces grouped counts but can also compute **incidence
