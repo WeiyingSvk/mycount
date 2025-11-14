@@ -53,8 +53,18 @@ jobs:
       - name: Calculate and upload Code Coverage
         run: |
           install.packages(c("covr", "xml2"))
-          covr::codecov()
+          cov <- covr::package_coverage()
+          print(cov)
+
+          covr::codecov(
+            coverage = cov,
+            token    = Sys.getenv("CODECOV_TOKEN"),
+            slug     = "WeiyingSvk/mycount",
+            branch   = Sys.getenv("GITHUB_REF_NAME"),
+            commit   = Sys.getenv("GITHUB_SHA")
+          )
         shell: Rscript {0}
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
 
