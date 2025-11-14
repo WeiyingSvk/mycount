@@ -9,6 +9,14 @@
 This package provides \code{count_bio()}, an extension of \code{dplyr::count()}
 that can also compute person-time, incidence rates, and exact Poisson CIs.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/WeiyingSvk/mycount}
+  \item Report bugs at \url{https://github.com/WeiyingSvk/mycount/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Vicky S. \email{weiyings@umich.edu}
 
