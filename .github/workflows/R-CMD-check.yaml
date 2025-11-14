@@ -51,6 +51,10 @@ jobs:
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
 
       - name: Calculate and upload Code Coverage
-        run: Rscript -e 'install.packages("covr"); covr::codecov()'
+        run: |
+          install.packages(c("covr", "xml2"))
+          covr::codecov()
+        shell: Rscript {0}
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
