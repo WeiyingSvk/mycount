@@ -59,12 +59,15 @@ jobs:
           covr::codecov(
             coverage = cov,
             token    = Sys.getenv("CODECOV_TOKEN"),
-            slug     = "WeiyingSvk/mycount",
+            slug     = "WeiyingSvk/mycount",        # 👈 关键！告诉 codecov repo 是谁
+            owner    = "WeiyingSvk",                # 可选，但更保险
+            repo     = "mycount",                   # 可选，但更保险
             branch   = Sys.getenv("GITHUB_REF_NAME"),
             commit   = Sys.getenv("GITHUB_SHA")
           )
         shell: Rscript {0}
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
 
 
