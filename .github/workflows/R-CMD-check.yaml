@@ -51,7 +51,7 @@ jobs:
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
 
 
-      - name: Install covr
+      - name: Install covr and xml2
         if: matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release'
         run: |
           install.packages("covr")
