@@ -29,6 +29,8 @@ jobs:
         shell: Rscript {0}
 
       - name: Run test coverage and upload to Codecov
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         run: |
-          covr::codecov(token = "${{ secrets.CODECOV_TOKEN }}")
+          covr::codecov()
         shell: Rscript {0}
