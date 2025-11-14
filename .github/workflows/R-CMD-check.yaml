@@ -1,5 +1,5 @@
-# Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
-# Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
+# R-CMD-check + Codecov coverage
+
 on:
   push:
     branches: [main, master]
@@ -21,7 +21,7 @@ jobs:
         config:
           - {os: macos-latest,   r: 'release'}
           - {os: windows-latest, r: 'release'}
-          - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release'}
+          - {os: ubuntu-latest,   r: 'devel',  http-user-agent: 'release'}
           - {os: ubuntu-latest,   r: 'release'}
           - {os: ubuntu-latest,   r: 'oldrel-1'}
 
@@ -50,18 +50,20 @@ jobs:
           upload-snapshots: true
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
 
-
+      # -----------------------------
+      # Coverage 部分：只在 ubuntu + release 上跑
+      # -----------------------------
       - name: Install covr and xml2
         if: matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release'
         run: |
-          install.packages("covr")
+          install.packages(c("covr", "xml2"))
         shell: Rscript {0}
 
-      - name: Generate coverage report
+      - name: Generate coverage report (Cobertura XML)
         if: matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release'
         run: |
           cov <- covr::package_coverage()
-          print(cov)
+          print(cov)  # 在 log 里看到 "mycount Coverage: 83.08%" 等
           covr::to_cobertura(cov, file = "coverage.xml")
         shell: Rscript {0}
 
@@ -72,6 +74,3 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.xml
           fail_ci_if_error: true
-
-
-
