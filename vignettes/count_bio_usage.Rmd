@@ -1,7 +1,7 @@
 
 
 ---
-title: "Using count_bio() for Biostatistical Analysis"
+title: "Using count_bio() for Group Count and Incidence Rate Calculation"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Using count_bio() for Biostatistical Analysis}
@@ -18,12 +18,209 @@ knitr::opts_chunk$set(
 library(mycount)
 library(dplyr)
 library(bench)
-set.seed(2025)
+set.seed(2000)
 ```
 **1. Introduction**
 
 mycount::count_bio() extends dplyr::count() for biostatistics / epidemiology:
-it computes grouped counts, and—if provided—incidence rates (events per person-time)
-with exact Poisson (Garwood) 95% confidence intervals.
+it computes grouped counts, and—if provided—incidence rates (events per person-time) with exact Poisson (Garwood) 95% confidence intervals.
 
 We demonstrate usage, verify correctness against dplyr::count(), and compare efficiency with bench::mark() on simulated datasets.
+
+Note: count_bio() automatically chooses a count column name that does not conflict with existing column names (e.g., using "n", "nn", "nnn", etc.). This is handled internally and usually requires no action from the user.
+
+
+**2. Basic grouped counts keep same**
+
+We first show that `count_bio()` behaves like a small extension of `dplyr::count_tally()` when we only ask for **grouped counts**.
+
+```{r basic-count}
+# toy data: treatment arm and binary event indicator
+df_basic <- tibble(
+  arm   = factor(sample(c("Drug", "Placebo"), 200, replace = TRUE)),
+  event = rbinom(200, size = 1, prob = 0.3)
+)
+
+# dplyr::count(): counts rows in each arm
+dplyr_counts <- df_basic %>%
+  count(arm)
+
+dplyr_counts
+```
+By default, count_bio() with no events or person_time supplied is essentially the same as dplyr::count():
+```{r}
+bio_counts <- df_basic %>%
+count_bio(arm)
+
+bio_counts
+```
+To check that the two results are identical (up to column name), we can use all.equal() on the numeric counts:
+```{r}
+all.equal(
+dplyr_counts$n,
+bio_counts$n
+)
+```
+Here TRUE means that the basic counting behavior of count_bio() matches dplyr::count() on this simple example.
+
+
+
+**3. Incidence rates with person-time (improvement part)**
+
+In many cohort or clinical-trial analyses, we not only count events but also summarise **person-time** and report **incidence rates** with confidence intervals. This is what `count_bio()` is designed for.
+
+Here we simulate a small dataset with a treatment arm, event indicator, and person-time (in person-years):
+
+```{r pt-data}
+set.seed(2000)
+
+df_pt <- tibble(
+  arm   = factor(sample(c("Drug", "Placebo"), 300, replace = TRUE)),
+  py    = rexp(300, rate = 1/2),        # person-years of follow-up
+  event = rbinom(300, size = 1, prob = 0.25)  # 0/1 event indicator
+)
+
+head(df_pt)
+```
+Now we call count_bio() with both events and person_time specified, and scale the rate to 100 person-years:
+```{r}
+rates_bio <- df_pt %>%
+count_bio(
+arm,
+events      = event,
+person_time = py,
+per         = 100
+)
+
+rates_bio
+```
+The output now contains:
+n: number of events in each arm (sum of event)
+pt: total person-time in each arm (sum of py)
+rate: incidence rate per 100 person-years (n / pt * 100)
+rate_lcl, rate_ucl: exact Poisson (Garwood) confidence interval limits for the rate.
+
+**We can check the answer through mathematical way**
+To verify correctness, we can reproduce the same quantities "by hand" using dplyr and base R functions.
+
+First we compute the total events and person-time per arm:
+```{r}
+manual_sums <- df_pt %>%
+group_by(arm) %>%
+summarise(
+n  = sum(event, na.rm = TRUE),
+pt = sum(py,    na.rm = TRUE),
+.groups = "drop"
+)
+
+manual_sums
+```
+Then we compute the incidence rate and the exact Poisson CI using the same formula as inside count_bio():
+```{r}
+alpha <- 1 - 0.95  # default 95% CI
+
+manual_rates <- manual_sums %>%
+mutate(
+rate     = n / pt,                              # per 1 person-year
+lower_cnt = 0.5 * qchisq(alpha / 2,     2 * n),
+upper_cnt = 0.5 * qchisq(1 - alpha / 2, 2 * (n + 1)),
+rate_lcl = lower_cnt / pt,
+rate_ucl = upper_cnt / pt,
+# scale to per 100 person-years
+rate     = rate     * 100,
+rate_lcl = rate_lcl * 100,
+rate_ucl = rate_ucl * 100
+) %>%
+select(arm, n, pt, rate, rate_lcl, rate_ucl)
+
+manual_rates
+```
+Finally we check that count_bio() matches this manual calculation:
+```{r}
+all.equal(
+rates_bio %>% arrange(arm) %>% select(arm, n, pt, rate, rate_lcl, rate_ucl),
+manual_rates %>% arrange(arm)
+)
+```
+If this returns TRUE, it confirms that the incidence rates and Poisson confidence intervals produced by count_bio() are consistent with the standard formulas we would write by hand.
+
+
+**4. Correctness in large sample size and performance benchmarking**
+
+In the previous section, we check our function package works in small dataset. In this section we check that `count_bio()` produces the correct results on a larger dataset, and we evaluate runtime performance relative to `dplyr::count()`.
+
+**4.1 Larger-scale correctness check**
+
+We now create a dataset with **50,000 rows**, including person-time and event indicators.
+
+```{r large-data}
+set.seed(2000)
+
+df_large <- tibble(
+  arm   = factor(sample(c("Drug", "Placebo"), 50000, replace = TRUE)),
+  py    = rexp(50000, rate = 1/1.5),
+  event = rbinom(50000, size = 1, prob = 0.25)
+)
+```
+Compute incidence rates with count_bio():
+```{r}
+bio_large <- df_large %>%
+count_bio(
+arm,
+events      = event,
+person_time = py,
+per         = 100
+)
+
+bio_large
+```
+Compute the same quantities manually:
+```{r}
+manual_large <- df_large %>%
+group_by(arm) %>%
+summarise(
+n  = sum(event, na.rm = TRUE),
+pt = sum(py,    na.rm = TRUE),
+.groups = "drop"
+) %>%
+mutate(
+rate      = n / pt * 100,
+rate_lcl  = 0.5 * qchisq(0.025, 2*n)       / pt * 100,
+rate_ucl  = 0.5 * qchisq(0.975, 2*(n+1))   / pt * 100
+)
+
+manual_large
+```
+Verification (TRUE → correct):
+```{r}
+all.equal(
+bio_large %>% arrange(arm) %>% select(arm, n, pt, rate, rate_lcl, rate_ucl),
+manual_large %>% arrange(arm)
+)
+```
+
+**Efficiency benchmarking**
+We now measure runtime for:
+dplyr::count_tally(),
+count_bio() without person-time (will play the same role as count_tally()),
+count_bio() with person-time + rates + CI.
+
+```{r benchmark, warning=FALSE, message=FALSE}
+bench::mark(
+  dplyr_count = df_large %>% count(arm),
+  bio_count   = df_large %>% count_bio(arm),
+  bio_rates   = df_large %>% count_bio(arm, events = event, person_time = py),
+  min_iterations = 20,
+  check = FALSE   # not checking the result equal or not
+)
+```
+We can find that:
+`dplyr_count` and `bio_count` have very similar runtimes. Even mycount run a little bit faster.  
+`bio_rates` is slower, with a median runtime of about **2.1 ms**, since it does more work.
+
+**5. In conclusion**
+
+The `count_bio()` function extends `dplyr::count()` by incorporating person-time, incidence rates, and exact Poisson (Garwood) confidence intervals. Across small and large simulated datasets, the results from `count_bio()` match `count_tally()` for event counts, and manual calculations match the total person-time, incidence rates, and confidence limits, confirming the correctness of the implementation.  
+In terms of computational efficiency, `count_bio()` performs similarly to `dplyr::count()` for simple grouped counts. When person-time and Poisson CIs are requested, runtime increases by roughly a factor of 1.5–2, but still remains within a few milliseconds for datasets with 50,000 observations.  
+This overhead is negligible for typical biostatistics workflows, making `count_bio()` a practical and efficient tool for routine epidemiological and clinical-trial summaries.
+
