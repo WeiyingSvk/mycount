@@ -28,7 +28,9 @@ Depends:
 Suggests: 
     knitr,
     rmarkdown,
-    bench
+    bench,
+    testthat (>= 3.0.0)
 VignetteBuilder: knitr
 URL: https://github.com/WeiyingSvk/mycount
 BugReports: https://github.com/WeiyingSvk/mycount/issues
+Config/testthat/edition: 3
