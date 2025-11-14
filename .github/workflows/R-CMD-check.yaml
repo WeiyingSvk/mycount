@@ -50,24 +50,28 @@ jobs:
           upload-snapshots: true
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
 
-      - name: Calculate and upload Code Coverage
+
+      - name: Install covr
+        if: matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release'
         run: |
-          install.packages(c("covr", "xml2"))
+          install.packages("covr")
+        shell: Rscript {0}
+
+      - name: Generate coverage report
+        if: matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release'
+        run: |
           cov <- covr::package_coverage()
           print(cov)
-
-          covr::codecov(
-            coverage = cov,
-            token    = Sys.getenv("CODECOV_TOKEN"),
-            slug     = "WeiyingSvk/mycount",        # 👈 关键！告诉 codecov repo 是谁
-            owner    = "WeiyingSvk",                # 可选，但更保险
-            repo     = "mycount",                   # 可选，但更保险
-            branch   = Sys.getenv("GITHUB_REF_NAME"),
-            commit   = Sys.getenv("GITHUB_SHA")
-          )
+          covr::to_cobertura(cov, file = "coverage.xml")
         shell: Rscript {0}
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload coverage to Codecov
+        if: matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release'
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
+          fail_ci_if_error: true
 
 
 
